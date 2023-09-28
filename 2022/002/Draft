@@ -1,0 +1,13 @@
+A -> rock	X score 1
+B -> paper	Y score 2
+C -> scissors	Z score 3
+
+A > C (Z)
+A < B (Y)
+A = A (X)
+
+lost 0
+win  6
+draw 3
+
+d: X means you need to lose, Y means you need to end the round in a draw, and Z means you need to win. Good luck!"
