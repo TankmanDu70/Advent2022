@@ -1,0 +1,3 @@
+/home/elmira/src/Advent2022/2022/011/CMakeFiles/day11.dir
+/home/elmira/src/Advent2022/2022/011/CMakeFiles/edit_cache.dir
+/home/elmira/src/Advent2022/2022/011/CMakeFiles/rebuild_cache.dir
