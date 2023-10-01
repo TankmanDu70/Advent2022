@@ -21,7 +21,7 @@ struct monkey
 {
     uint index;
     struct item *items;
-    uint items_count;
+    uint count;
     char operator;
     uint factor;
     bool square;
@@ -31,17 +31,17 @@ struct monkey
     uint inspect_counter;
 };
 
-struct monkey *monkeys;
+monkeyObj monkeys;
 int monkey_count;
 
 void monkeyParser(char *str, FILE *ptr_in, char *test);
 
-void monkeyPrint(struct monkey *monkey);
-void monkeyRound(struct monkey *monkey);
-bool monkeyTest(struct monkey *monkey, size_t obj_ind);
-void monkeyInspect(struct monkey *monkey, size_t obj_ind);
+void monkeyPrint(monkeyObj monkey);
+void monkeyRound(monkeyObj monkey);
+bool monkeyTest(monkeyObj monkey, size_t obj_ind);
+void monkeyInspect(monkeyObj monkey, size_t obj_ind);
 void monkeyThrow(uint monkey_from, uint monkey_to, uint obj_index);
-void monkeyListObjects(struct monkey *monkey);
+void monkeyListObjects(monkeyObj monkey);
 uint monkeyGetBusiness();
 void primedecGet(uint number, struct item *it);
 void primedecPrint(struct item *it);
@@ -145,7 +145,7 @@ void monkeyParser(char *in_str, FILE *ptr_in, char *test)
         uint objects[10];
         int obj_cnt = sscanf(in_str, "  Starting items: %u, %u, %u, %u, %u, %u, %u, %u, %u, %u", objects, objects + 1, objects + 2, objects + 3, objects + 4, objects + 5, objects + 6, objects + 7, objects + 8, objects + 9);
         monkeys[monkey_count - 1].items = malloc(obj_cnt * sizeof(struct item));
-        monkeys[monkey_count - 1].items_count = obj_cnt;
+        monkeys[monkey_count - 1].count = obj_cnt;
         if (obj_cnt >= 0)
         {
             printf("added objects :\n");
@@ -269,9 +269,9 @@ void monkeyParser(char *in_str, FILE *ptr_in, char *test)
     monkeyPrint(monkeys + (monkey_count - 1));
 }
 
-void monkeyRound(struct monkey *monkey)
+void monkeyRound(monkeyObj monkey)
 {
-    for (size_t obj_ind = monkey->items_count; obj_ind--; obj_ind > 0)
+    for (size_t obj_ind = monkey->count; obj_ind--; obj_ind > 0)
     {
         monkeyInspect(monkey, obj_ind);
         if (monkeyTest(monkey, obj_ind) == true)
@@ -281,7 +281,7 @@ void monkeyRound(struct monkey *monkey)
     }
 }
 
-void monkeyInspect(struct monkey *monkey, size_t obj_index)
+void monkeyInspect(monkeyObj monkey, size_t obj_index)
 {
     monkey->inspect_counter++;
 #ifdef printEVENTS
@@ -333,15 +333,15 @@ void monkeyInspect(struct monkey *monkey, size_t obj_index)
 #endif
 }
 
-bool monkeyTest(struct monkey *monkey, size_t obj_ind)
+bool monkeyTest(monkeyObj monkey, size_t obj_ind)
 {
     return (monkey->items[obj_ind].prm_dec[monkey->divide_by] && monkey->items[obj_ind].rst == 0);
 }
 
-void monkeyPrint(struct monkey *monkey)
+void monkeyPrint(monkeyObj monkey)
 {
-    printf("I print monkey %d:\n  obj count = %d\n  Starting items: ", monkey->index, monkey->items_count);
-    for (size_t i = 0; i < monkey->items_count; i++)
+    printf("I print monkey %d:\n  obj count = %d\n  Starting items: ", monkey->index, monkey->count);
+    for (size_t i = 0; i < monkey->count; i++)
     {
         printf("%d ", primeFactor(&(monkey->items[i])));
     }
@@ -356,11 +356,11 @@ void monkeyPrint(struct monkey *monkey)
     // printf("__printed monkey__\n");
 }
 
-void monkeyListObjects(struct monkey *monkey)
+void monkeyListObjects(monkeyObj monkey)
 {
-    printf("monkey %1d: obj count = %2d\t", monkey->index, monkey->items_count);
+    printf("monkey %1d: obj count = %2d\t", monkey->index, monkey->count);
     printf("%3d inspections\t", monkey->inspect_counter);
-    for (size_t i = 0; i < monkey->items_count; i++)
+    for (size_t i = 0; i < monkey->count; i++)
     {
         printf("%d ", primeFactor(&monkey->items[i]));
     }
@@ -372,12 +372,12 @@ void monkeyThrow(uint monkey_from, uint monkey_to, uint obj_index)
 #ifdef printEVENTS
     printf("# monkey %d throws %d to monkey %d \n", monkey_from, primeFactor(&monkeys[monkey_from].items[obj_index]), monkey_to);
 #endif
-    monkeys[monkey_to].items = realloc(monkeys[monkey_to].items, ++monkeys[monkey_to].items_count * sizeof(struct item));
+    monkeys[monkey_to].items = realloc(monkeys[monkey_to].items, ++monkeys[monkey_to].count * sizeof(struct item));
     monkeyExchange(monkey_to, monkey_from, obj_index);
-    // if (obj_index != monkeys[monkey_from].items_count)
-    //     monkeys[monkey_from].items[obj_index] = monkeys[monkey_from].items[monkeys[monkey_from].items_count];
+    // if (obj_index != monkeys[monkey_from].count)
+    //     monkeys[monkey_from].items[obj_index] = monkeys[monkey_from].items[monkeys[monkey_from].count];
     monkeys[monkey_from]
-        .items = realloc(monkeys[monkey_from].items, --monkeys[monkey_from].items_count * sizeof(struct item));
+        .items = realloc(monkeys[monkey_from].items, --monkeys[monkey_from].count * sizeof(struct item));
 #ifdef printEVENTS
     monkeyListObjects(monkeys + monkey_from);
     monkeyListObjects(monkeys + monkey_to);
@@ -454,9 +454,9 @@ void monkeyExchange(uint monkey_to, uint monkey_from, uint obj_index)
 {
     for (size_t i = 0; i < prime_cnt; i++)
     {
-        monkeys[monkey_to].items[monkeys[monkey_to].items_count - 1].prm_dec[i] = monkeys[monkey_from].items[obj_index].prm_dec[i];
+        monkeys[monkey_to].items[monkeys[monkey_to].count - 1].prm_dec[i] = monkeys[monkey_from].items[obj_index].prm_dec[i];
     }
-    monkeys[monkey_to].items[monkeys[monkey_to].items_count - 1].rst = monkeys[monkey_from].items[obj_index].rst;
+    monkeys[monkey_to].items[monkeys[monkey_to].count - 1].rst = monkeys[monkey_from].items[obj_index].rst;
 }
 
 uint primeFactor(struct item *it)

@@ -153,6 +153,30 @@ day11.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/day11.dir/build.make CMakeFiles/day11.dir/day11.c.s
 .PHONY : day11.c.s
 
+item.o: item.c.o
+.PHONY : item.o
+
+# target to build an object file
+item.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/day11.dir/build.make CMakeFiles/day11.dir/item.c.o
+.PHONY : item.c.o
+
+item.i: item.c.i
+.PHONY : item.i
+
+# target to preprocess a source file
+item.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/day11.dir/build.make CMakeFiles/day11.dir/item.c.i
+.PHONY : item.c.i
+
+item.s: item.c.s
+.PHONY : item.s
+
+# target to generate assembly for a file
+item.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/day11.dir/build.make CMakeFiles/day11.dir/item.c.s
+.PHONY : item.c.s
+
 monkeys.o: monkeys.c.o
 .PHONY : monkeys.o
 
@@ -177,6 +201,30 @@ monkeys.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/day11.dir/build.make CMakeFiles/day11.dir/monkeys.c.s
 .PHONY : monkeys.c.s
 
+team.o: team.c.o
+.PHONY : team.o
+
+# target to build an object file
+team.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/day11.dir/build.make CMakeFiles/day11.dir/team.c.o
+.PHONY : team.c.o
+
+team.i: team.c.i
+.PHONY : team.i
+
+# target to preprocess a source file
+team.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/day11.dir/build.make CMakeFiles/day11.dir/team.c.i
+.PHONY : team.c.i
+
+team.s: team.c.s
+.PHONY : team.s
+
+# target to generate assembly for a file
+team.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/day11.dir/build.make CMakeFiles/day11.dir/team.c.s
+.PHONY : team.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -189,9 +237,15 @@ help:
 	@echo "... day11.o"
 	@echo "... day11.i"
 	@echo "... day11.s"
+	@echo "... item.o"
+	@echo "... item.i"
+	@echo "... item.s"
 	@echo "... monkeys.o"
 	@echo "... monkeys.i"
 	@echo "... monkeys.s"
+	@echo "... team.o"
+	@echo "... team.i"
+	@echo "... team.s"
 .PHONY : help
 
 

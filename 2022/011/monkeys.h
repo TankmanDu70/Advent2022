@@ -1,22 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-
-typedef struct
-{
-    int value;
-    struct divisible
-    {
-        bool by_2;
-        bool by_3;
-        bool by_5;
-        bool by_7;
-        bool by_11;
-        bool by_13;
-        bool by_17;
-        bool by_19;
-    } is_div;
-} item;
+#include "item.h"
 
 struct monkey
 {
@@ -24,16 +9,25 @@ struct monkey
     struct stash_t
     {
         item *items;
-        int items_count;
+        int count;
+        int size;
     } stash;
-    bool (*isDivisible)(item *it);
-    struct monkey *monKeyFalse;
-    struct monkey *monKeyTrue;
-    int inspect_counter;
+    int operand;
+    char operator;
+    int div;
+    uint8_t monKeyFalseIndex;
+    uint8_t monKeyTrueIndex;
+    int inspect_count;
 };
 
-struct monkey *monkeys[8];
+typedef struct monkey *monkeyObj;
 
-bool parseMonkey(FILE *file, struct monkey *m);
-void parseFile(char *path);
-void monkeyCtor(struct monkey *m);
+bool monkeyParse(FILE *file, monkeyObj m);
+void monkeyCtor(monkeyObj m);
+void monkeyPrint(monkeyObj m);
+void monkeyPass(monkeyObj me, monkeyObj dest);
+
+bool monkeyCompute(monkeyObj m);
+void monkeyBore(monkeyObj me);
+void monkeyStashPrint(monkeyObj m);
+void monkeyBusyPrint(monkeyObj m);
