@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.25)
+project(DAY_15 LANGUAGES C)
+set(CMAKE_C_COMPILER /usr/bin/gcc)
+add_executable(day15 main.c sensor.c mapping.c)
+target_include_directories(day15 PUBLIC ${DAY15_SOURCE_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
