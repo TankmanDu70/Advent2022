@@ -67,4 +67,7 @@ CMakeFiles/day11.dir/day11.c.o: \
  /usr/include/x86_64-linux-gnu/bits/fp-fast.h \
  /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
  /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
- /home/elmira/src/Advent2022/2022/011/monkeys.h
+ /home/elmira/src/Advent2022/2022/011/team.h \
+ /home/elmira/src/Advent2022/2022/011/monkeys.h \
+ /home/elmira/src/Advent2022/2022/011/item.h \
+ /home/elmira/src/Advent2022/2022/011/main.h

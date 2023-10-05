@@ -1,1 +1,1 @@
-/usr/bin/gcc CMakeFiles/day11.dir/day11.c.o CMakeFiles/day11.dir/monkeys.c.o -o day11 
+/usr/bin/gcc -g CMakeFiles/day11.dir/day11.c.o CMakeFiles/day11.dir/monkeys.c.o CMakeFiles/day11.dir/team.c.o CMakeFiles/day11.dir/item.c.o -o day11 

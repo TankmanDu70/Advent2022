@@ -9,7 +9,9 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/elmira/src/Advent2022/2022/011/day11.c" "CMakeFiles/day11.dir/day11.c.o" "gcc" "CMakeFiles/day11.dir/day11.c.o.d"
+  "/home/elmira/src/Advent2022/2022/011/item.c" "CMakeFiles/day11.dir/item.c.o" "gcc" "CMakeFiles/day11.dir/item.c.o.d"
   "/home/elmira/src/Advent2022/2022/011/monkeys.c" "CMakeFiles/day11.dir/monkeys.c.o" "gcc" "CMakeFiles/day11.dir/monkeys.c.o.d"
+  "/home/elmira/src/Advent2022/2022/011/team.c" "CMakeFiles/day11.dir/team.c.o" "gcc" "CMakeFiles/day11.dir/team.c.o.d"
   )
 
 # Targets to which this target links.

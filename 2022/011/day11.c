@@ -28,6 +28,7 @@ void main(int argc, char *argv[])
     }
 
     teamPrintFinalScore(&team);
+    exit(0);
 }
 
 char getPromptC(void)

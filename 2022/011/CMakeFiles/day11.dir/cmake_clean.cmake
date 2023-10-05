@@ -1,8 +1,12 @@
 file(REMOVE_RECURSE
   "CMakeFiles/day11.dir/day11.c.o"
   "CMakeFiles/day11.dir/day11.c.o.d"
+  "CMakeFiles/day11.dir/item.c.o"
+  "CMakeFiles/day11.dir/item.c.o.d"
   "CMakeFiles/day11.dir/monkeys.c.o"
   "CMakeFiles/day11.dir/monkeys.c.o.d"
+  "CMakeFiles/day11.dir/team.c.o"
+  "CMakeFiles/day11.dir/team.c.o.d"
   "day11"
   "day11.pdb"
 )

@@ -13,12 +13,15 @@ int main(int argc, int *argv[])
     mapping readingList;
     mappingCtor(&readingList);
     mappingParser(file, &readingList);
-    printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 7), 7);
+    for (int ii = 9; ii < 12; ii++)
+    {
+        printf("%d free cells on line %d\r\n", freeCellCount(&readingList, ii), ii);
+    }
 
-    printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 9), 9);
-    printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 10), 10);
-    printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 11), 11);
-
-    printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 20), 20);
-    //printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 2000000), 2000000);
+    // printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 9), 9);
+    // printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 10), 10);
+    // printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 11), 11);
+    //
+    // printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 16), 16);
+    printf("%d free cells on line %d\r\n", freeCellCount(&readingList, 2000000), 2000000);
 }

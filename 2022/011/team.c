@@ -36,7 +36,7 @@ void teamPrintFinalScore(m_team *team)
             secondHighest = team->monkeys[ii]->inspect_count;
         }
     }
-    printf(" \r\nSCORES\t %u \t %u\r\n %llu\r\n",
+    printf(" \r\nSCORES\t %llu \t %llu\r\n %llu\r\n",
            highest, secondHighest, (long long unsigned int)(secondHighest * highest));
 }
 
