@@ -1,0 +1,16 @@
+[package]
+name = "aoc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+enum-iterator = "2.1.0"
+itertools = "0.13.0"
+num-derive = "0.4.2"
+num-traits = "0.2.19"
+permutator = "0.4.3"
+permutohedron = "0.2.4"
+regex = "1.11.1"
+rodio = "0.20.1"
+strum = "0.26.3"
+strum_macros = "0.26.4"
