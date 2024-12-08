@@ -1,252 +1,414 @@
-use std::cmp::Ordering;
-use std::env;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::iter;
+mod data;
+extern crate clearscreen;
+extern crate num_derive;
+extern crate num_traits;
+#[allow(unused)]
+use clearscreen::clear;
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+use std::{thread::sleep, time::Duration};
 
-type Point = (usize, usize);
-type Position = (Point, Dir);
-type Obstructions = Vec<Vec<usize>>;
+pub const DELAY: u32 = 100_000_000u32;
 
-#[derive(Clone, Copy, PartialEq)]
-enum Status {
-    Unknown,
-    NotLoop,
-    Loop,
+#[test]
+fn test_004() {
+    assert_eq!(
+        data::TEST,
+        "....#.....
+.........#
+..........
+..#.......
+.......#..
+..........
+.#..^.....
+........#.
+#.........
+......#..."
+    );
+    let mut map: MazeT = MazeT::new(data::TEST);
+    let mut guard = GuardT::new(&map, String::from("main"));
+    explore(&mut guard, &mut map);
+    assert_eq!(guard.visited, 41);
+
+    let mut map2: MazeT = MazeT::new(data::TEST);
+    let mut guard2 = GuardT::new(&map2, String::from("main"));
+    findloops(&mut guard2, &mut map2);
+
+    let mut b = BumperT::new(0, 0);
+    for _i in 0..1000 {
+        b.mark_collision(DirT::Top);
+    }
+    assert_eq!(b.mark_collision(DirT::Top), true);
+    assert_eq!(b.mark_collision(DirT::Left), false);
+
+    assert!(map2.inducers.contains(&BumperT::new(1, 8)));
+    assert!(map2.inducers.contains(&BumperT::new(3, 8)));
+    assert!(map2.inducers.contains(&BumperT::new(7, 7)));
+    assert!(map2.inducers.contains(&BumperT::new(6, 7)));
+    assert!(map2.inducers.contains(&BumperT::new(7, 9)));
+    assert!(map2.inducers.contains(&BumperT::new(3, 6)));
+    assert_eq!(guard2.loop_chance, 6);
 }
 
-#[derive(Clone, Copy, Debug)]
-enum Dir {
-    Up,
-    Right,
-    Down,
-    Left,
-}
-
-impl Dir {
-    pub fn turn_right(self) -> Self {
-        match self {
-            Dir::Up => Dir::Right,
-            Dir::Right => Dir::Down,
-            Dir::Down => Dir::Left,
-            Dir::Left => Dir::Up,
+fn explore(g: &mut GuardT, m: &mut MazeT) {
+    g.locate(&m);
+    while !g.got_out() {
+        if !g.advance(m) {
+            let ind = g.get_the_bump_ind(m).unwrap();
+            g.rotate();
+            if ind == usize::MAX {
+                continue;
+            }
+            m.bumpers[ind].mark_collision(g.pos.dir);
         }
-    }
-
-    pub fn to_index(self, point_index: usize) -> usize {
-        4 * point_index + self as usize
+        m.mark(g.pos);
     }
 }
 
-fn lower_bound<T: Ord + Clone>(haystack: &[T], needle: T, temp_bound: Option<T>) -> Option<T> {
-    let index = haystack
-        .binary_search_by(|x| match x.cmp(&needle) {
-            Ordering::Equal => Ordering::Greater,
-            ord => ord,
-        })
-        .unwrap_err();
-    let result = haystack.get(index.wrapping_sub(1)).cloned();
-    temp_bound
-        .and_then(|t| (t < needle && result.clone().is_none_or(|result| t > result)).then_some(t))
-        .or(result)
-}
+fn findloops(g: &mut GuardT, m: &mut MazeT) {
+    g.locate(&m);
+    while !g.got_out() {
+        let p_ind: CoordT = g.pos.next(g.pos.dir);
+        if g.bumper_in_corner(&m) && m.is_free(&p_ind) {
+            let mut loops = false;
+            let mut newg = g.clone();
+            m.cells[p_ind.y][p_ind.x] = '#';
+            m.bumpers.push(BumperT::new(p_ind.x, p_ind.y));
+            newg.name = String::from("Bouncer");
 
-fn upper_bound<T: Ord + Clone>(haystack: &[T], needle: T, temp_bound: Option<T>) -> Option<T> {
-    let index = haystack
-        .binary_search_by(|x| match x.cmp(&needle) {
-            Ordering::Equal => Ordering::Less,
-            ord => ord,
-        })
-        .unwrap_err();
-    let result = haystack.get(index).cloned();
-    temp_bound
-        .and_then(|t| (t > needle && result.clone().is_none_or(|result| t < result)).then_some(t))
-        .or(result)
-}
+            newg.rotate();
+            while !newg.got_out() && !loops {
+                if !newg.advance(m) {
+                    let ind: usize = newg.get_the_bump_ind(m).unwrap();
+                    if ind == usize::MAX {
+                        loops = true;
+                        //means the virtual guard got out
+                        continue;
+                    }
+                    let bump: BumperT =
+                        BumperT::new(g.pos.next(g.pos.dir).x, g.pos.next(g.pos.dir).y);
 
-enum GridState {
-    OutOfBounds,
-    Obstruction,
-    Point(Point),
-}
-
-struct TemporaryObstruction<'a> {
-    grid: &'a Grid,
-    temp_obstruction: Point,
-}
-
-impl TemporaryObstruction<'_> {
-    pub fn stops(&self, init_pos: Position) -> impl Iterator<Item = Position> + use<'_> {
-        let (t_x, t_y) = self.temp_obstruction;
-        iter::successors(Some(init_pos), move |&((x, y), dir)| {
-            let next = match dir {
-                Dir::Up => lower_bound(
-                    &self.grid.vert_obstructions[x],
-                    y,
-                    (x == t_x).then_some(t_y),
-                )
-                .map(|o_y| (x, o_y + 1)),
-                Dir::Right => {
-                    upper_bound(&self.grid.hor_obstructions[y], x, (y == t_y).then_some(t_x))
-                        .map(|o_x| (o_x - 1, y))
+                    if m.bumpers[ind].mark_collision(newg.pos.dir) {
+                        if !g.loop_inducers.contains(&bump) {
+                            g.loop_chance += 1;
+                            g.loop_inducers.push(bump);
+                            m.inducers.push(g.loop_inducers.last().unwrap().clone());
+                        }
+                        loops = true;
+                    }
+                    newg.rotate();
                 }
-                Dir::Down => upper_bound(
-                    &self.grid.vert_obstructions[x],
-                    y,
-                    (x == t_x).then_some(t_y),
-                )
-                .map(|o_y| (x, o_y - 1)),
-                Dir::Left => {
-                    lower_bound(&self.grid.hor_obstructions[y], x, (y == t_y).then_some(t_x))
-                        .map(|o_x| (o_x + 1, y))
-                }
-            };
-            next.map(|next| (next, dir.turn_right()))
-        })
-        .skip(1) // Skip initial position.
-    }
-}
-
-struct Grid {
-    width: usize,
-    height: usize,
-    vert_obstructions: Obstructions,
-    hor_obstructions: Obstructions,
-}
-
-impl Grid {
-    pub fn new<T: IntoIterator<Item = Point>>(
-        width: usize,
-        height: usize,
-        obstructions: T,
-    ) -> Self {
-        let mut vert_obstructions: Obstructions = vec![vec![]; width];
-        let mut hor_obstructions: Obstructions = vec![vec![]; height];
-        for (x, y) in obstructions {
-            vert_obstructions[x].push(y);
-            hor_obstructions[y].push(x);
+            }
+            m.bumpers.pop();
+            m.cells[p_ind.y][p_ind.x] = '.';
+            m.reset_bumpers();
         }
-        vert_obstructions.iter_mut().for_each(|v| v.sort());
-        hor_obstructions.iter_mut().for_each(|v| v.sort());
-        Grid {
-            width,
-            height,
-            vert_obstructions,
-            hor_obstructions,
-        }
-    }
-
-    pub fn with_obstruction(&self, point: Point) -> TemporaryObstruction<'_> {
-        TemporaryObstruction {
-            grid: self,
-            temp_obstruction: point,
-        }
-    }
-
-    pub fn is_in_bounds(&self, (x, y): Point) -> bool {
-        (0..self.width).contains(&x) && (0..self.height).contains(&y)
-    }
-
-    pub fn is_obstruction(&self, (x, y): Point) -> bool {
-        self.vert_obstructions[x].binary_search(&y).is_ok()
-    }
-
-    pub fn step(&self, (current, dir): Position) -> GridState {
-        let (x, y) = current;
-        let next = match dir {
-            Dir::Up => (x, y.wrapping_sub(1)),
-            Dir::Right => (x.wrapping_add(1), y),
-            Dir::Down => (x, y.wrapping_add(1)),
-            Dir::Left => (x.wrapping_sub(1), y),
+        if !g.advance(m) {
+            g.rotate();
         };
-        if !self.is_in_bounds(next) {
-            GridState::OutOfBounds
-        } else if self.is_obstruction(next) {
-            GridState::Obstruction
-        } else {
-            GridState::Point(next)
-        }
+        m.mark(g.pos);
     }
-
-    pub fn point_index(&self, (x, y): Point) -> usize {
-        y * self.width + x
-    }
-
-    pub fn print(&self){
-
-    }
+    m.print(0, false);
 }
 
 fn main() {
-    let input = env::args_os().nth(1).unwrap();
-    let reader = BufReader::new(File::open(input).unwrap());
-    let mut start = None;
-    let mut obstructions: Vec<Point> = Vec::new();
-    let mut x = 0;
-    let mut y = 0;
-    for line in reader.lines() {
-        let line = line.unwrap();
-        x = 0;
-        for c in line.chars() {
-            match c {
-                '^' => start = Some((x, y)),
-                '#' => {
-                    obstructions.push((x, y));
+    println!("Hello, world!");
+    let mut map2: MazeT = MazeT::new(data::DATA);
+    let mut guard2 = GuardT::new(&map2, String::from("main"));
+    findloops(&mut guard2, &mut map2);
+
+    assert!(map2.cells[guard2.start.y][guard2.start.x] != 'O');
+    println!(
+        "The guard visited {} cells, loop chances found {}(={})",
+        guard2.visited,
+        guard2.loop_chance,
+        guard2.loop_inducers.len()
+    );
+}
+
+#[derive(Debug, Clone, Copy, FromPrimitive, PartialEq, Eq)]
+enum DirT {
+    Top = 0,
+    Right,
+    Bottom,
+    Left,
+    Cnt,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CoordT {
+    x: usize,
+    y: usize,
+    xmax: usize,
+    ymax: usize,
+    dir: DirT,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct BumperT {
+    pos: CoordT,
+    from: Vec<u16>,
+}
+
+impl BumperT {
+    pub fn new(x: usize, y: usize) -> BumperT {
+        BumperT {
+            pos: CoordT::new(x, y, 0, 0),
+            from: vec![0; 4],
+        }
+    }
+    pub fn mark_collision(&mut self, dir: DirT) -> bool {
+        let ind = <usize as FromPrimitive>::from_usize(dir as usize).unwrap();
+        if self.from[ind] > 20 {
+            return true;
+        }
+        self.from[ind] += 1;
+        return false;
+    }
+}
+
+impl CoordT {
+    pub fn new(x: usize, y: usize, xmax: usize, ymax: usize) -> CoordT {
+        CoordT {
+            x: x,
+            y: y,
+            xmax: xmax,
+            ymax: ymax,
+            dir: DirT::Top,
+        }
+    }
+    pub fn next(&self, dir: DirT) -> CoordT {
+        let mut new_pos = self.clone();
+        match dir {
+            DirT::Top => {
+                if self.y != 0 {
+                    new_pos.y -= 1
                 }
-                _ => {}
             }
-            x += 1;
+            DirT::Right => {
+                if self.x != self.xmax {
+                    new_pos.x += 1
+                }
+            }
+            DirT::Bottom => {
+                if self.y != self.ymax {
+                    new_pos.y += 1
+                }
+            }
+            DirT::Left => {
+                if self.x != 0 {
+                    new_pos.x -= 1
+                }
+            }
+            DirT::Cnt => {
+                // this should not happen
+                assert!(false)
+            }
         }
-        y += 1;
+        return new_pos;
     }
-    let (width, height) = (x, y);
-    let start = start.unwrap();
-    let grid = Grid::new(width, height, obstructions);
+    pub fn got_out(&self) -> bool {
+        return (self.x == self.xmax && self.dir == DirT::Right)
+            || (self.x == 0 && self.dir == DirT::Left)
+            || (self.y == self.ymax && self.dir == DirT::Bottom)
+            || (self.y == 0 && self.dir == DirT::Top);
+    }
+}
 
-    let mut path_points = vec![false; width * height];
-    let mut is_loop: Vec<Status> = vec![Status::Unknown; width * height];
-    let mut visited = vec![false; width * height * 4];
-    let mut tmp_visited = vec![false; width * height * 4];
-    let mut current = start;
-    let mut dir = Dir::Up;
-    loop {
-        let current_index = grid.point_index(current);
-        path_points[current_index] = true;
-        let pos = (current, dir);
-        let pos_index = dir.to_index(current_index);
-        visited[pos_index] = true;
+#[derive(Debug, Clone)]
+struct GuardT {
+    name: String,
+    pos: CoordT,
+    start: CoordT,
+    visited: u32,
+    loop_chance: u32,
+    loop_inducers: Vec<BumperT>,
+}
+impl GuardT {
+    pub fn new(maze: &MazeT, name: String) -> GuardT {
+        GuardT {
+            name: name,
+            pos: CoordT::new(0, 0, maze.cells[0].len() - 1, maze.cells.len() - 1),
+            start: CoordT::new(0, 0, maze.cells[0].len() - 1, maze.cells.len() - 1),
+            visited: 1,
+            loop_chance: 0,
+            loop_inducers: Vec::new(),
+        }
+    }
+    pub fn locate(&mut self, maze: &MazeT) {
+        //println!("Searching guard");
+        for y in 0..maze.max_y() {
+            for x in 0..maze.max_x() {
+                if maze.cells[y][x] == '^' {
+                    self.pos.x = x;
+                    self.pos.y = y;
+                    self.start.x = x;
+                    self.start.y = y;
+                    println!("Located guard {} at ({},{})", self.name, x, y);
+                    return;
+                }
+            }
+        }
+        assert!(false);
+    }
+    pub fn rotate(&mut self) {
+        self.pos.dir = FromPrimitive::from_u8((self.pos.dir as u8 + 1) % DirT::Cnt as u8).unwrap();
+    }
+    pub fn advance(&mut self, map: &MazeT) -> bool {
+        // net method has limit;
+        let new_pos = self.pos.next(self.pos.dir);
+        if map.get_cell(new_pos.x, new_pos.y) == '#' {
+            return false;
+        } else {
+            self.pos = new_pos;
+            if map.get_cell(new_pos.x, new_pos.y) == '.' {
+                self.visited += 1;
+            }
+        }
+        return true;
+    }
+    pub fn get_the_bump_ind(&mut self, map: &MazeT) -> Option<usize> {
+        if self.pos.got_out() {
+            return Some(usize::MAX);
+        }
+        let new_pos: CoordT = self.pos.next(self.pos.dir);
+        assert_eq!(map.get_cell(new_pos.x, new_pos.y), '#');
+        for b in 0..map.bumpers.len() {
+            if map.bumpers[b].pos.x == new_pos.x && map.bumpers[b].pos.y == new_pos.y {
+                return Some(b);
+            }
+        }
+        return None;
+    }
+    pub fn bumper_in_corner(&mut self, map: &MazeT) -> bool {
+        for b in &map.bumpers {
+            if (self.pos.x < b.pos.x && self.pos.y == b.pos.y && self.pos.dir == DirT::Top)
+                || (self.pos.x == b.pos.x && self.pos.y < b.pos.y && self.pos.dir == DirT::Right)
+                || (self.pos.x > b.pos.x && self.pos.y == b.pos.y && self.pos.dir == DirT::Bottom)
+                || (self.pos.x == b.pos.x && self.pos.y > b.pos.y && self.pos.dir == DirT::Left)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    pub fn got_out(&self) -> bool {
+        return self.pos.got_out();
+    }
+    #[allow(dead_code)]
+    pub fn print_loops(&self) -> String {
+        let mut ret = String::from("");
+        for line in 0..self.pos.ymax {
+            for cell in 0..self.pos.xmax {
+                ret.push_str(".");
+                for b in &self.loop_inducers {
+                    if b.pos.y == line && b.pos.x == cell {
+                        ret.pop();
+                        ret.push_str("O");
+                    }
+                }
+            }
+            ret.push_str("\n");
+        }
+        return ret;
+    }
+}
 
-        let next = match grid.step(pos) {
-            GridState::OutOfBounds => {
-                break;
+#[derive(Debug)]
+struct MazeT {
+    cells: Vec<Vec<char>>,
+    bumpers: Vec<BumperT>,
+    inducers: Vec<BumperT>,
+}
+
+impl MazeT {
+    pub fn new(input: &str) -> MazeT {
+        let mut map: Vec<Vec<char>> = Vec::new();
+        for line in input.split('\n') {
+            map.push(line.chars().collect());
+        }
+        let mut bmprs = Vec::new();
+        let indrs = Vec::new();
+        for y in 0..map.len() {
+            for x in 0..map[0].len() {
+                if map[y][x] == '#' {
+                    bmprs.push(BumperT::new(x, y));
+                }
             }
-            GridState::Obstruction => {
-                dir = dir.turn_right();
-                continue;
-            }
-            GridState::Point(next) => next,
+        }
+        for _b in &bmprs {}
+        MazeT {
+            cells: map,
+            bumpers: bmprs,
+            inducers: indrs,
+        }
+    }
+    #[allow(dead_code)]
+    pub fn refill(&mut self, input: &str) {
+        if !self.cells.is_empty() {
+            self.cells.clear();
+        }
+        for line in input.split('\n') {
+            self.cells.push(line.chars().collect());
+        }
+    }
+    pub fn get_cell(&self, x: usize, y: usize) -> char {
+        return self.cells[y][x];
+    }
+    pub fn mark(&mut self, pos: CoordT) {
+        self.cells[pos.y][pos.x] = match pos.dir {
+            DirT::Top => '|',
+            DirT::Bottom => '|',
+            DirT::Left => '-',
+            DirT::Right => '-',
+            DirT::Cnt => '~',
         };
-        current = next;
-        let next_index = next.1 * width + next.0;
-        if next == start || is_loop[next_index] != Status::Unknown {
-            continue;
-        }
-        let extended_grid = grid.with_obstruction(next);
-        let mut found = Status::NotLoop;
-        for (new_point, new_dir) in extended_grid.stops(pos) {
-            let new_pos_index = new_dir.to_index(grid.point_index(new_point));
-            if visited[new_pos_index] || tmp_visited[new_pos_index] {
-                found = Status::Loop;
-                break;
-            }
-            tmp_visited[new_pos_index] = true;
-        }
-        tmp_visited.fill(false);
-        is_loop[next_index] = found;
     }
-
-    let ans1 = path_points.into_iter().filter(|b| *b).count();
-    let ans2 = is_loop.into_iter().filter(|b| *b == Status::Loop).count();
-    println!("ans1 = {ans1}");
-    println!("ans2 = {ans2}");
+    #[allow(dead_code)]
+    pub fn mark_loop(&mut self, x: usize, y: usize) {
+        self.cells[y][x] = 'O';
+    }
+    #[allow(dead_code)]
+    pub fn print(&self, delay: u32, loop_only: bool) -> String {
+        if delay != 0 {
+            clearscreen::clear().expect("failed to clear screen");
+        }
+        let mut ret = String::from("");
+        for line in 0..self.max_y() {
+            for cell in 0..self.max_x() {
+                if loop_only {
+                    ret.push('.');
+                } else {
+                    ret.push_str(&self.cells[line][cell].to_string());
+                }
+                for l in &self.inducers {
+                    if l.pos.x == cell && l.pos.y == line {
+                        ret.pop();
+                        ret.push('O');
+                    }
+                }
+            }
+            ret.push_str("\n");
+        }
+        println!("{}", ret.clone());
+        if delay != 0 {
+            sleep(Duration::new(0, delay));
+        }
+        return ret;
+    }
+    pub fn max_x(&self) -> usize {
+        return self.cells[0].len();
+    }
+    pub fn max_y(&self) -> usize {
+        return self.cells.len();
+    }
+    #[allow(dead_code)]
+    pub fn is_free(&self, pos: &CoordT) -> bool {
+        return self.cells[pos.y][pos.x] != '#';
+    }
+    pub fn reset_bumpers(&mut self) {
+        for b in &mut self.bumpers {
+            b.from = vec![0; 4];
+        }
+    }
 }
