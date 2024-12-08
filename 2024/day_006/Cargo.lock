@@ -3,6 +3,15 @@
 version = 3
 
 [[package]]
+name = "aoc"
+version = "0.1.0"
+dependencies = [
+ "clearscreen",
+ "num-derive",
+ "num-traits",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -37,15 +46,6 @@ dependencies = [
  "thiserror",
  "which",
  "winapi",
-]
-
-[[package]]
-name = "day_006"
-version = "0.1.0"
-dependencies = [
- "clearscreen",
- "num-derive",
- "num-traits",
 ]
 
 [[package]]
