@@ -15,7 +15,9 @@ pub const TEST1: &str = "...0...
 7.....7
 8.....8
 9.....9";
-pub const TEST2: &str = "10..9..
+pub const TEST2: &str = 
+"
+10..9..
 2...8..
 3...7..
 4567654
