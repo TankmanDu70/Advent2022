@@ -1,8 +1,7 @@
-use std::collections::HashMap;
 mod data;
 
 #[test]
-fn test_004() { 
+fn test_aoc() { 
     assert_eq!(data::TEST, "test");
     assert_eq!(data::DATA, "data");
 }
