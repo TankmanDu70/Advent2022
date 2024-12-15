@@ -18,6 +18,9 @@ fn test_aoc() {
     let mut grid = Map::new(data::TEST, true);
     assert_eq!(unsafe { grid.all_moves() }.print(), data::TESTR2R);
     assert_eq!(grid.coordinates_sum_2(), 9021);
+ 
+    let mut grid = Map::new(data::DATA, true);
+    assert_eq!(unsafe { grid.all_moves() }.coordinates_sum(), 1492011);
 }
 
 fn main() {
