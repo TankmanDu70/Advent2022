@@ -20,7 +20,7 @@ fn test_aoc() {
     assert_eq!(grid.coordinates_sum_2(), 9021);
  
     let mut grid = Map::new(data::DATA, true);
-    assert_eq!(unsafe { grid.all_moves() }.coordinates_sum(), 1492011);
+    assert_eq!(unsafe { grid.all_moves() }.coordinates_sum_2(), 1492011);
 }
 
 fn main() {
@@ -49,10 +49,8 @@ struct Box {
     pos: Vec<Pos>,
 }
 struct Map {
-    robot: Pos,
-    box_cnt: usize,
-    boxes: Vec<Box>,
-    walls: Vec<Pos>,
+    robot: Pos, 
+    boxes: Vec<Box>, 
     cells: Vec<Vec<char>>,
     commands: String,
     part2: bool,
@@ -63,8 +61,7 @@ impl Map {
         let mut robot = Pos { x: 0, y: 0 };
         let mut _x = 0usize;
         let mut _y = 0usize;
-        let mut _bc = 0usize;
-        let mut _walls = Vec::new();
+        let mut _bc = 0usize; 
         let mut _boxes = Vec::new();
         let mut _vg: Vec<Vec<char>> = Vec::new();
         let mut _cmds = String::from("");
@@ -127,11 +124,9 @@ impl Map {
         return Map {
             robot: robot,
             cells: _vg,
-            commands: _cmds,
-            box_cnt: _bc,
+            commands: _cmds, 
             part2: part2,
-            boxes: _boxes,
-            walls: _walls,
+            boxes: _boxes, 
         };
     }
 
@@ -358,8 +353,6 @@ impl Map {
                 for _memb in 0.._box.pos.len() {
                     let _x = _box.pos[_memb].x as usize;
                     let _y = _box.pos[_memb].y as usize;
-                    // box likely fragmented
-                    //assert_ne!(vec!['[', ']'].contains(&self.cells[_y][_x]), true);
                     if _memb == 0 {
                         self.cells[_y][_x] = '[';
                     } else {
@@ -376,13 +369,11 @@ impl Map {
     }
 
     fn coordinates_sum(&self) -> u32 {
-        let mut bc: usize = self.box_cnt;
         let mut cost = 0u32;
         for _y in 0..self.cells.len() {
             for _x in 0..self.cells[_y].len() {
                 if self.cells[_y][_x] == 'O' {
                     cost += _y as u32 * 100 + _x as u32;
-                    bc += 1;
                 }
             }
         }
@@ -390,11 +381,9 @@ impl Map {
     }
 
     fn coordinates_sum_2(&self) -> u32 {
-        let mut bc: usize = self.box_cnt;
         let mut cost = 0u32;
         for _b in &self.boxes {
-            cost += _b.pos[0].y as u32 * 100 + _b.pos[0].x as u32;
-            bc += 1;
+            cost += _b.pos[0].y as u32 * 100 + _b.pos[0].x as u32; 
         }
         return cost;
     }
