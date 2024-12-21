@@ -1,22 +1,58 @@
-use std::{ops::BitXor, u64};
+use std::{collections::HashMap, ops::BitXor, u32, u64};
 
 mod data;
 mod tests;
 
 fn main() {
     println!("Hello, world!");
-    let mut uc = Ucontrol {
-        reg_a: 55593699,
+    let mut uc: Ucontrol = Ucontrol {
+        reg_a: 0,
         reg_b: 0,
         reg_c: 0,
         i_p: 0,
         prog: String::from("2413750315445530"),
         output: String::from(""),
     };
-    uc.eval();
-    println!("{}", uc.output);
+    let mut ii: u64 = 0;
+    while ii < 100 {
+        uc.clear();
+        uc.reg_a = ii;
+        uc.eval();
+        ii += 1;
+        println!("{:}\t{}", ii,  uc.output);
+    }
 }
 
+fn brutal() {
+    let mut uc: Ucontrol = Ucontrol {
+        reg_a: 16 * 3,
+        reg_b: 0,
+        reg_c: 0,
+        i_p: 0,
+        prog: String::from("2413750315445530"),
+        output: String::from(""),
+    };
+    let mut ii: u64 = 0;
+    let target = uc.prog.len();
+    let prog = uc.prog.clone();
+    for _c in prog.chars() {
+        let len = uc.output.len();
+        let mut ans = u64::MAX;
+        while ans == ans {
+            while uc.output.chars().nth(0).is_none() {
+                uc.clear();
+                uc.reg_a = ii;
+                uc.eval();
+                ii += 1;
+            }
+            if uc.output.chars().nth(0).unwrap() == _c {
+                ans = ii;
+            }
+        }
+        println!("{:}\t{}{}", ii, _c, uc.output);
+    }
+}
+#[derive(Clone, Debug)]
 struct Ucontrol {
     reg_a: u64,
     reg_b: u64,
@@ -27,8 +63,20 @@ struct Ucontrol {
 }
 
 impl Ucontrol {
+    fn clear(&mut self) -> &mut Ucontrol {
+        self.reg_a = 0;
+        self.reg_b = 0;
+        self.reg_c = 0;
+        self.i_p = 0;
+        self.output = String::from("");
+        return self;
+    }
+    fn done(&mut self) -> bool {
+        return self.i_p >= self.prog.len();
+    }
     fn eval(&mut self) -> &mut Ucontrol {
         while self.i_p < self.prog.len() {
+            print!("{} -> ", self.reg_a);
             let literal = self
                 .prog
                 .chars()
@@ -101,7 +149,20 @@ impl Ucontrol {
                 }
                 _ => assert!(false),
             }
+            println!("{}", self.reg_a);
         }
         return self;
+    }
+}
+
+struct Hacker {
+    trackers_0: HashMap<String, Ucontrol>,
+}
+
+impl Hacker {
+    fn back_track(uc: &mut Ucontrol) -> Ucontrol {
+        let mut _nuc = uc.clone();
+        while _nuc.eval().output == uc.output {}
+        return _nuc;
     }
 }

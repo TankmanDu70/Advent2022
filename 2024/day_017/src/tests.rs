@@ -85,4 +85,16 @@ fn test_aoc() {
     };
     uc.eval();
     assert_ne!(uc.output, "3,2,3,0,2,4,1,5,3");
+
+    let mut uc = Ucontrol {
+        reg_a: 2024,
+        reg_b: 0,
+        reg_c: 0,
+        i_p: 0,
+        prog: String::from("035430"),
+        output: String::from(""),
+    };
+    uc.eval();
+    assert_ne!(uc.output, "0,3,5,4,3,0");
+  
 }
