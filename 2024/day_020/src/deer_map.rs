@@ -605,9 +605,9 @@ impl Map {
     }
 
     pub fn cheat_2(&mut self, obj: usize) -> HashMap<usize, Vec<(Cell, Cell)>> {
-        //let mut paths: Vec<Vec<usize>> = vec![vec![0; self.cells.len()]; self.cells[0].len()];
-        //for _p in self.paths.iter() {
-        //    paths[_p.0.pos.y as usize][_p.0.pos.x as usize] = *_p.1;
+        // let mut paths: Vec<Vec<usize>> = vec![vec![0; self.cells.len()]; self.cells[0].len()];
+        // for _p in self.paths.iter() {
+        // paths[_p.0.pos.y as usize][_p.0.pos.x as usize] = *_p.1;
         //}
         let mut minimaps = HashMap::<Cell, HashMap<Cell, usize>>::new();
         for _p in self.paths.iter() {

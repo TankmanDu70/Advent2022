@@ -51,9 +51,10 @@ fn main() {
     }
     println!("Part 1 :{}", ans);
 
-    for _c in map.cheat_2(100) { 
+    for _c in map.cheat_2(100) {
         if _c.0 >= 100 {
-            ans += _c.1.len(); 
+            ans += _c.1.len();
+            println!("{}", ans);
         }
     }
     println!("Part 2 :{}", ans);
